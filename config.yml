@@ -1,5 +1,5 @@
 # title of website
-title: nav
+title: 简单导航
 
 # description of website
 description: xgnw's navigation site
@@ -14,7 +14,7 @@ url: https://xgnw.github.io/nav/
 github: "https://github.com/xgnw"
 
 # footer message
-footer: © 2021-2021 @xgnw
+footer: © 2023 简单导航
 
 # template(theme) of your site, available:
 # 1. webstack (http://webstack.cc)
