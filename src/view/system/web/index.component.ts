@@ -3,6 +3,8 @@
 // See https://github.com/xjh22222228/nav
 
 import { Component } from '@angular/core'
+import { CommonModule } from '@angular/common'
+import { FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { INavProps, INavTwoProp, INavThreeProp, IWebProps } from 'src/types'
 import {
   websiteList,
@@ -16,7 +18,6 @@ import { isLogin, removeWebsite } from 'src/utils/user'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { NzModalService } from 'ng-zorro-antd/modal'
 import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { FormBuilder, FormGroup, Validators } from '@angular/forms'
 import { getTextContent } from 'src/utils'
 import { setWebsiteList, deleteByWeb } from 'src/utils/web'
 import { updateFileContent } from 'src/api'
@@ -24,11 +25,47 @@ import { DB_PATH, STORAGE_KEY_MAP } from 'src/constants'
 import { $t } from 'src/locale'
 import { saveAs } from 'file-saver'
 import { isSelfDevelop } from 'src/utils/util'
+import { NzInputModule } from 'ng-zorro-antd/input'
+import { NzButtonModule } from 'ng-zorro-antd/button'
+import { NzSpinModule } from 'ng-zorro-antd/spin'
+import { NzTableModule } from 'ng-zorro-antd/table'
+import { NzTabsModule } from 'ng-zorro-antd/tabs'
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm'
+import { NzSelectModule } from 'ng-zorro-antd/select'
+import { NzIconModule } from 'ng-zorro-antd/icon'
+import { NzModalModule } from 'ng-zorro-antd/modal'
+import { NzFormModule } from 'ng-zorro-antd/form'
+import { NzSwitchModule } from 'ng-zorro-antd/switch'
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip'
+import { LogoComponent } from 'src/components/logo/logo.component'
+import { TagListComponent } from 'src/components/tag-list/index.component'
+import { EditCategoryComponent } from 'src/components/edit-category/index.component'
 import event from 'src/utils/mitt'
 import config from '../../../../nav.config.json'
 
 @Component({
-  selector: 'app-admin',
+  standalone: true,
+  imports: [
+    EditCategoryComponent,
+    CommonModule,
+    NzToolTipModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NzInputModule,
+    NzButtonModule,
+    NzSpinModule,
+    NzTableModule,
+    NzTabsModule,
+    NzPopconfirmModule,
+    NzSelectModule,
+    LogoComponent,
+    NzIconModule,
+    NzModalModule,
+    NzFormModule,
+    NzSwitchModule,
+    TagListComponent,
+  ],
+  selector: 'app-web',
   templateUrl: './index.component.html',
   styleUrls: ['./index.component.scss'],
 })
@@ -37,7 +74,6 @@ export default class WebpComponent {
   isSelfDevelop = isSelfDevelop
   settings = settings
   internal = internal
-  validateForm!: FormGroup
   websiteList: INavProps[] = websiteList
   gitRepoUrl = config.gitRepoUrl
   isLogin = isLogin
@@ -56,17 +92,10 @@ export default class WebpComponent {
   errorWebs: IWebProps[] = []
 
   constructor(
-    private fb: FormBuilder,
     private modal: NzModalService,
     private notification: NzNotificationService,
     private message: NzMessageService
-  ) {
-    this.validateForm = this.fb.group({
-      title: ['', [Validators.required]],
-      icon: [''],
-      ownVisible: [false],
-    })
-  }
+  ) {}
 
   ngOnInit() {}
 
@@ -343,7 +372,7 @@ export default class WebpComponent {
     })
   }
 
-  openCreateWebModal() {
+  openCreateWebModal(): any {
     if (this.tabActive === 3 && !this.threeSelect) {
       return this.message.error($t('_sel3'))
     }
@@ -360,7 +389,7 @@ export default class WebpComponent {
     })
   }
 
-  toggleCreateModal() {
+  toggleCreateModal(): any {
     // 检测是否有选择
     if (!this.showCreateModal) {
       if (this.tabActive === 1 && !this.oneSelect) {
@@ -372,8 +401,7 @@ export default class WebpComponent {
     }
 
     this.isEdit = false
-    this.showCreateModal = !this.showCreateModal
-    this.validateForm.reset()
+    event.emit('EDIT_CATEGORY_OPEN')
   }
 
   onTabChange(index?: number) {
@@ -593,20 +621,13 @@ export default class WebpComponent {
 
   handleEditBtn(data: any, editIdx: number) {
     let { title, icon, name, ownVisible } = data
-    this.toggleCreateModal()
     this.isEdit = true
     this.editIdx = editIdx
-    this.validateForm.get('title')!.setValue(title || name || '')
-    this.validateForm.get('icon')!.setValue(icon || '')
-    this.validateForm.get('ownVisible')!.setValue(!!ownVisible)
-  }
-
-  onChangeFile(data: any) {
-    this.validateForm.get('icon')!.setValue(data.cdn)
-  }
-
-  get iconUrl(): string {
-    return this.validateForm.get('icon')?.value || ''
+    event.emit('EDIT_CATEGORY_OPEN', {
+      title: title || name,
+      icon: icon,
+      ownVisible,
+    })
   }
 
   handleSync() {
@@ -632,21 +653,9 @@ export default class WebpComponent {
     })
   }
 
-  handleOk() {
+  handleOk(payload: any): any {
     const createdAt = Date.now()
-
-    for (const i in this.validateForm.controls) {
-      this.validateForm.controls[i].markAsDirty()
-      this.validateForm.controls[i].updateValueAndValidity()
-    }
-
-    let { title, icon, ownVisible } = this.validateForm.value
-
-    if (!title || !title.trim()) {
-      this.message.error('分类名称不能为空')
-      return
-    }
-    title = title.trim()
+    let { title, icon, ownVisible } = payload
 
     if (this.isEdit) {
       switch (this.tabActive) {
@@ -758,8 +767,6 @@ export default class WebpComponent {
       this.message.success($t('_addSuccess'))
     }
 
-    this.validateForm.reset()
-    this.toggleCreateModal()
     setWebsiteList(this.websiteList)
   }
 }
